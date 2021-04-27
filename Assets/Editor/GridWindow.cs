@@ -32,6 +32,11 @@ public class GridWindow : EditorWindow
     public bool OnlyOnce;
 
     public GameObject GridParent;
+
+    public bool PerlinNoiseBool;
+    public float PerlinNoise = 0f;
+    public float Refinement = 0f;
+    public float Multiplier = 0f;
     //Forma della griglia
     //Quadrato = Lato
     //Rettangolo = lunghezza e larghezza -> se quadrato vuol dire che lunghezza = larghezza = lato
@@ -67,10 +72,14 @@ public class GridWindow : EditorWindow
         EditorGUILayout.LabelField("Grid parent for instantiate cube");
         GridParent = (GameObject)EditorGUILayout.ObjectField(GridParent, typeof(GameObject), true);
         GUILayout.EndHorizontal();
+
+
+        
         GUILayout.BeginHorizontal();
         /*Test Cube*/TestCube = EditorGUILayout.ToggleLeft("Instantiate automatically gameobject", TestCube);                                                            
         /*Test Cube*/if(TestCube == true)                                                                                                    
-        /*Test Cube*/{                                                                                                                       
+        /*Test Cube*/{
+            IsFreeConstriction = false;
         /*Test Cube*/   TestCubeObject = EditorGUILayout.ObjectField(TestCubeObject, typeof(GameObject), true);
         /*Test Cube*/   OnlyOnce = true;
         /*Test Cube*/}
@@ -86,9 +95,41 @@ public class GridWindow : EditorWindow
         /*Test Cube*/   }
         /*Test Cube*/}
         /*Test Cube*/GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        if (TestCube == true)
+        {
+            PerlinNoiseBool = EditorGUILayout.ToggleLeft("Add perlin noise to grid", PerlinNoiseBool);
+            if (PerlinNoiseBool == true && TestCube == true)
+            {
+                GUILayout.BeginVertical();
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Perlin Noise Value");
+                PerlinNoise = EditorGUILayout.FloatField(PerlinNoise);
+                GUILayout.EndHorizontal();
+                
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Refinement");
+                Refinement = EditorGUILayout.FloatField(Refinement);
+                GUILayout.EndHorizontal();
+                
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Multiplier");
+                Multiplier = EditorGUILayout.FloatField(Multiplier);
+                GUILayout.EndHorizontal();
+                GUILayout.EndVertical();
+            }
+        }
+        else
+        {
+            PerlinNoiseBool = false;
+        }
+        GUILayout.EndHorizontal();
+
         IsFreeConstriction = EditorGUILayout.ToggleLeft("Is free Constriction? True = Free; False = Widht and Height",IsFreeConstriction);
         if (IsFreeConstriction == true)
         {
+            TestCube = false;
             TotalTile = TempTotalTile;
             GUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Number of total tile");
@@ -247,9 +288,16 @@ public class GridWindow : EditorWindow
             }
             for (int i = 0; i < TotalTile; i++)
             {
-                if(Tile[i] != null)
+                if(Tile[i] != null && PerlinNoiseBool == false) //if quello e se non c'è la spunta del perlin noise
                 {
                     TileInstantiate[i] = (GameObject)Instantiate(Tile[i], new Vector3(XPos[i], YPos[i], ZPos[i]), Quaternion.identity);
+                    TileInstantiate[i].transform.parent = GridParent.transform;
+                }
+                if (Tile[i] != null && PerlinNoiseBool == true) //if quello e se c'è anche la spunta del perlin noise
+                {
+                    PerlinNoise = Mathf.PerlinNoise(XPos[i] * Refinement, ZPos[i] * Refinement);
+                    TileInstantiate[i] = (GameObject)Instantiate(Tile[i], new Vector3(XPos[i], YPos[i], ZPos[i]), Quaternion.identity);
+                    TileInstantiate[i].transform.position = new Vector3(XPos[i], PerlinNoise * Multiplier, ZPos[i]);
                     TileInstantiate[i].transform.parent = GridParent.transform;
                 }
             }
