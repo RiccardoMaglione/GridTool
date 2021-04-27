@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Rendering;
 
 public class GridWindow : EditorWindow
 {
@@ -29,6 +30,8 @@ public class GridWindow : EditorWindow
     public int K;
     public Object TestCubeObject;
     public bool OnlyOnce;
+
+    public GameObject GridParent;
     //Forma della griglia
     //Quadrato = Lato
     //Rettangolo = lunghezza e larghezza -> se quadrato vuol dire che lunghezza = larghezza = lato
@@ -61,6 +64,10 @@ public class GridWindow : EditorWindow
         #endregion
 
         /*Test Cube*/GUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Grid parent for instantiate cube");
+        GridParent = (GameObject)EditorGUILayout.ObjectField(GridParent, typeof(GameObject), true);
+        GUILayout.EndHorizontal();
+        GUILayout.BeginHorizontal();
         /*Test Cube*/TestCube = EditorGUILayout.ToggleLeft("Instantiate automatically gameobject", TestCube);                                                            
         /*Test Cube*/if(TestCube == true)                                                                                                    
         /*Test Cube*/{                                                                                                                       
@@ -243,8 +250,26 @@ public class GridWindow : EditorWindow
                 if(Tile[i] != null)
                 {
                     TileInstantiate[i] = (GameObject)Instantiate(Tile[i], new Vector3(XPos[i], YPos[i], ZPos[i]), Quaternion.identity);
+                    TileInstantiate[i].transform.parent = GridParent.transform;
                 }
             }
+
+            MeshFilter[] meshFilters = GridParent.GetComponentsInChildren<MeshFilter>();
+            CombineInstance[] combine = new CombineInstance[meshFilters.Length];
+
+            int k = 0;
+            while (k < meshFilters.Length)
+            {
+                combine[k].mesh = meshFilters[k].sharedMesh;
+                combine[k].transform = meshFilters[k].transform.localToWorldMatrix;
+                meshFilters[k].gameObject.SetActive(false);
+
+                k++;
+            }
+            GridParent.transform.GetComponent<MeshFilter>().mesh = new Mesh();
+            GridParent.transform.GetComponent<MeshFilter>().sharedMesh.indexFormat = IndexFormat.UInt32;
+            GridParent.transform.GetComponent<MeshFilter>().sharedMesh.CombineMeshes(combine);
+            GridParent.transform.gameObject.SetActive(true);
         }
         if (GUILayout.Button("Reset Grid"))
         {
@@ -262,6 +287,7 @@ public class GridWindow : EditorWindow
                     DestroyImmediate(TileInstantiate[i]);
                 }                                     
             }
+            GridParent.transform.GetComponent<MeshFilter>().mesh = new Mesh();
         }
 
         EditorGUILayout.EndScrollView();
